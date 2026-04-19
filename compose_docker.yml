@@ -18,6 +18,7 @@ services:
   # Access: http://localhost:8080
   # API Docs: http://localhost:8080/docs
   mcp-gateway:
+    container_name: tinymcp-gateway
     build:
       context: ../tinymcp
       dockerfile: Dockerfile

@@ -1,8 +1,10 @@
 # MCP Cluster
+This project aim to create an MCP bsaed playground for agentic AI. **It is not a production ready setup** and uses few open source publically available MCP servers.
+While TinyMCP gateway and SkillsMCP server are custom implementation that you can find among my repositories. 
 
 A Docker-based cluster that aggregates multiple MCP (Model Context Protocol) servers into a single, unified gateway. This setup allows any MCP-compatible client to access a rich set of tools through one endpoint.
 
-## Architecture
+## Deployment Architecture
 
 ```mermaid
 graph TB
