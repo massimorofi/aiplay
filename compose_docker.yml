@@ -1,0 +1,128 @@
+# MCP Cluster - Docker Compose Configuration
+#
+# This compose file orchestrates the full MCP (Model Context Protocol) cluster:
+# - tinymcp gateway: Central aggregator for all MCP servers
+# - skillsmcp: FastMCP Skills Provider (Claude Code skills)
+# - Docker MCP servers: Desktop Commander, Wikipedia, DuckDuckGo, OpenBnB Airbnb
+#
+# Usage:
+#   docker compose -f compose_docker.yml -p mcp-cluster up -d
+#   docker compose -f compose_docker.yml -p mcp-cluster down
+#
+
+services:
+  # ─── MCP Gateway (tinymcp) ───────────────────────────────
+  # Central gateway that aggregates all MCP servers.
+  # Provides a single entry point for MCP clients to access all tools.
+  #
+  # Access: http://localhost:8080
+  # API Docs: http://localhost:8080/docs
+  mcp-gateway:
+    build:
+      context: ../tinymcp
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - SECRETS_PATH=/app/secrets.json
+    volumes:
+      - ./config/tinymcp/config.json:/app/config.json:ro
+      - ./config/tinymcp/secrets.json:/app/secrets.json:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - skillsmcp
+      - desktop-commander
+      - wikipedia-mcp
+      - duckduckgo-mcp
+      - openbnb-airbnb
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - mcp-cluster
+
+  # ─── Skills MCP Server (skillsmcp) ───────────────────────
+  # Provides Claude Code skills as MCP tools via streamable-http transport.
+  # Loads skills from the mounted skills directory.
+  #
+  # Access: http://localhost:3001/mcp
+  skillsmcp:
+    build:
+      context: ../skillsmcp
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - HOST=0.0.0.0
+    volumes:
+      - ./skills:/home/user/.claude/skills:ro
+      - ./config/skillsmcp/skills.settings.json:/app/skills.settings.json:ro
+    restart: unless-stopped
+    networks:
+      - mcp-cluster
+
+  # ─── Docker MCP: Desktop Commander ───────────────────────
+  # File system operations, shell execution, and Docker management.
+  # Provides tools for managing files, running commands, and controlling Docker.
+  #
+  # Access: stdio (through gateway)
+  desktop-commander:
+    image: mcp/desktop-commander:latest
+    stdin_open: true
+    tty: true
+    volumes:
+      - ${HOME}:/home/user:rw
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: "no"
+    networks:
+      - mcp-cluster
+
+  # ─── Docker MCP: Wikipedia ───────────────────────────────
+  # Wikipedia search and article retrieval.
+  # Provides tools for searching Wikipedia and reading articles.
+  #
+  # Access: stdio (through gateway)
+  wikipedia-mcp:
+    image: mcp/wikipedia-mcp:latest
+    stdin_open: true
+    tty: true
+    restart: "no"
+    networks:
+      - mcp-cluster
+
+  # ─── Docker MCP: DuckDuckGo ──────────────────────────────
+  # Web search via DuckDuckGo.
+  # Provides tools for searching the web using DuckDuckGo.
+  #
+  # Access: stdio (through gateway)
+  duckduckgo-mcp:
+    image: mcp/duckduckgo:latest
+    stdin_open: true
+    tty: true
+    restart: "no"
+    networks:
+      - mcp-cluster
+
+  # ─── Docker MCP: OpenBnB Airbnb ──────────────────────────
+  # Airbnb-style accommodation search.
+  # Provides tools for searching vacation rentals and accommodations.
+  #
+  # Access: stdio (through gateway)
+  openbnb-airbnb:
+    image: mcp/openbnb-airbnb:latest
+    stdin_open: true
+    tty: true
+    restart: "no"
+    networks:
+      - mcp-cluster
+
+networks:
+  mcp-cluster:
+    name: mcp-cluster
+    driver: bridge
