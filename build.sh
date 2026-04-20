@@ -7,6 +7,7 @@
 # Builds:
 #   - tinymcp gateway (from ../tinymcp)
 #   - skillsmcp server (from ../skillsmcp)
+#   - dema control plane (from ../dema)
 #   - Pulls all mcp/* Docker MCP server images
 #
 
@@ -56,6 +57,7 @@ verify_sources() {
 
     local TINY_MCP_DIR="${SCRIPT_DIR}/../tinymcp"
     local SKILLS_MCP_DIR="${SCRIPT_DIR}/../skillsmcp"
+    local DEMA_DIR="${SCRIPT_DIR}/../dema"
 
     if [[ ! -d "$TINY_MCP_DIR" ]] || [[ ! -f "${TINY_MCP_DIR}/Dockerfile" ]]; then
         error "tinymcp directory not found or missing Dockerfile at: ${TINY_MCP_DIR}"
@@ -68,6 +70,12 @@ verify_sources() {
         exit 1
     fi
     ok "skillsmcp source: ${SKILLS_MCP_DIR}"
+
+    if [[ ! -d "$DEMA_DIR" ]] || [[ ! -f "${DEMA_DIR}/Dockerfile" ]]; then
+        error "dema directory not found or missing Dockerfile at: ${DEMA_DIR}"
+        exit 1
+    fi
+    ok "dema source: ${DEMA_DIR}"
 }
 
 # ─── Prepare config files ──────────────────────────────────
@@ -140,6 +148,11 @@ build_images() {
     info "Building skillsmcp server..."
     docker compose -f "${COMPOSE_FILE}" -p mcp-cluster build skillsmcp
     ok "skillsmcp server built"
+
+    # Build dema control plane
+    info "Building dema control plane..."
+    docker compose -f "${COMPOSE_FILE}" -p mcp-cluster build dema
+    ok "dema control plane built"
 }
 
 # ─── Pull Docker MCP images ────────────────────────────────
@@ -167,7 +180,7 @@ list_images() {
     section "Built Images Summary"
 
     info "Custom images:"
-    docker images "mcp-cluster-mcp-gateway" "mcp-cluster-skillsmcp" 2>/dev/null || true
+    docker images "mcp-cluster-mcp-gateway" "mcp-cluster-skillsmcp" "mcp-cluster-dema" 2>/dev/null || true
     echo ""
     info "Docker MCP server images:"
     docker images "mcp/*" 2>/dev/null || true

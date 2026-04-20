@@ -3,6 +3,7 @@
 # This compose file orchestrates the full MCP (Model Context Protocol) cluster:
 # - tinymcp gateway: Central aggregator for all MCP servers
 # - skillsmcp: FastMCP Skills Provider (Claude Code skills)
+# - dema: MCP Control Plane (Deus Ex Machina) - orchestration engine
 # - Docker MCP servers: Desktop Commander, Wikipedia, DuckDuckGo, OpenBnB Airbnb
 #
 # Usage:
@@ -120,6 +121,43 @@ services:
     stdin_open: true
     tty: true
     restart: "no"
+    networks:
+      - mcp-cluster
+
+  # ─── DEMA (Deus Ex Machina) - MCP Control Plane ──────────
+  # Enterprise orchestration engine that manages multi-stage agentic workflows.
+  # Connects to the MCP Gateway to discover and execute tools.
+  #
+  # Access: http://localhost:8090
+  # API Docs: http://localhost:8090/docs
+  dema:
+    container_name: dema-control-plane
+    build:
+      context: ../dema
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    environment:
+      - DEMA_ENV=prod
+      - DEMA_PORT=8090
+      - DEMA_LOG_LEVEL=info
+      - GATEWAY_URL=http://mcp-gateway:8080
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://localhost:1234/v1}
+      - LLM_API_KEY=${LLM_API_KEY:-not-needed-for-local}
+      - LLM_MODEL_NAME=${LLM_MODEL_NAME:-hermes-3-llama-3.1}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-4096}
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.2}
+      - MEMORY_P2_THRESHOLD=${MEMORY_P2_THRESHOLD:-2000}
+      - MEMORY_P3_TTL=${MEMORY_P3_TTL:-3600}
+    depends_on:
+      - mcp-gateway
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8090/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - mcp-cluster
 

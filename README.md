@@ -12,7 +12,7 @@ graph TB
         C1[Claude Code]
         C2[Cursor]
         C3[VS Code]
-        C4[Custom Client]
+        C4[Aura WebUI]
     end
 
     subgraph "MCP Cluster (Docker)"
@@ -20,8 +20,9 @@ graph TB
             GW[Claude Gateway\ntinymcp\n:8080]
         end
 
-        subgraph "Internal MCP Servers"
+        subgraph "Internal Servers"
             SK[Skills MCP Server\nskillsmcp\n:3001]
+            DM[DEMA Control Plane\ndema\n:8090]
             DC[Desktop Commander\ndocker MCP]
             WP[Wikipedia MCP]
             DD[DuckDuckGo MCP]
@@ -35,6 +36,7 @@ graph TB
     C4 -->|streamable-http| GW
 
     GW -->|streamable-http| SK
+    GW -->|http| DM
     GW -->|stdio| DC
     GW -->|stdio| WP
     GW -->|stdio| DD
@@ -78,7 +80,39 @@ A FastMCP-based skills provider that exposes Claude Code skills as MCP tools. Bu
   - Hot-reload support for skill development
   - Skills directory mounted from `./skills`
 
-### 3. Desktop Commander MCP
+### 3. DEMA Control Plane (dema)
+
+The MCP Control Plane (Deus Ex Machina) is an enterprise-grade orchestration engine that manages complex, multi-stage agentic workflows. Built from the [dema](../dema) project.
+
+- **Port**: `8090`
+- **Transport**: HTTP (FastAPI REST API)
+- **Features**:
+  - Multi-stage plan orchestration with state machine enforcement
+  - 4-tier context management (P0-P3 memory hierarchy)
+  - Human-in-the-loop approval gates for high-risk decisions
+  - Policy engine for decision validation
+  - Gateway client for tool execution via the MCP Gateway
+  - LLM integration for autonomous decision-making
+  - Immutable audit trail for all operations
+
+**API Endpoints**:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/v1/info` | GET | System information |
+| `/v1/plans` | POST | Create a new orchestration plan |
+| `/v1/plans/{id}` | GET | Get plan details |
+| `/v1/plans/{id}/state` | GET | Get plan state (P0-P3 context) |
+| `/v1/plans/{id}/run` | POST | Start/continue plan execution |
+| `/v1/plans/{id}/pause` | POST | Pause plan execution |
+| `/v1/plans/{id}/resume` | POST | Resume paused plan |
+| `/v1/plans/{id}/stages` | POST | Add a stage to a plan |
+| `/v1/plans/{id}/audit` | GET | Get audit logs |
+| `/v1/approvals/{id}` | POST | Handle approval request |
+| `/docs` | GET | Swagger API documentation |
+
+### 4. Desktop Commander MCP
 
 A Docker MCP server for file system operations, shell execution, and Docker management.
 
@@ -90,7 +124,7 @@ A Docker MCP server for file system operations, shell execution, and Docker mana
   - Docker container management
   - Host filesystem access via volume mount
 
-### 4. Wikipedia MCP
+### 5. Wikipedia MCP
 
 A Docker MCP server for Wikipedia search and article retrieval.
 
@@ -101,7 +135,7 @@ A Docker MCP server for Wikipedia search and article retrieval.
   - Full article content retrieval
   - Language support
 
-### 5. DuckDuckGo MCP
+### 6. DuckDuckGo MCP
 
 A Docker MCP server for web search via DuckDuckGo.
 
@@ -112,7 +146,7 @@ A Docker MCP server for web search via DuckDuckGo.
   - News search
   - Safe search options
 
-### 6. OpenBnB Airbnb MCP
+### 7. OpenBnB Airbnb MCP
 
 A Docker MCP server for Airbnb-style accommodation search.
 
@@ -140,6 +174,7 @@ A Docker MCP server for Airbnb-style accommodation search.
 This will:
 - Build the tinymcp gateway image
 - Build the skillsmcp server image
+- Build the dema control plane image
 - Pull all Docker MCP server images
 - Create necessary config files
 
@@ -150,7 +185,7 @@ This will:
 ```
 
 The cluster will:
-- Start all 6 services
+- Start all 7 services
 - Wait for the gateway to become healthy
 - Display access points and client configuration
 
@@ -296,6 +331,23 @@ response = httpx.post(
 | `/mcp` | GET/POST | MCP streamable-http endpoint |
 | `/sse` | GET | SSE endpoint for skills |
 
+### DEMA Control Plane (http://localhost:8090)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/v1/info` | GET | System information |
+| `/v1/plans` | POST | Create orchestration plan |
+| `/v1/plans/{id}` | GET | Get plan details |
+| `/v1/plans/{id}/state` | GET | Get plan state |
+| `/v1/plans/{id}/run` | POST | Start plan execution |
+| `/v1/plans/{id}/pause` | POST | Pause plan |
+| `/v1/plans/{id}/resume` | POST | Resume plan |
+| `/v1/plans/{id}/stages` | POST | Add stage to plan |
+| `/v1/plans/{id}/audit` | GET | Get audit logs |
+| `/v1/approvals/{id}` | POST | Handle approval |
+| `/docs` | GET | Swagger documentation |
+
 ## Docker Compose Commands
 
 ### Manual docker compose usage
@@ -325,6 +377,13 @@ docker compose -f compose_docker.yml -p mcp-cluster up -d --build
 | `COMPOSE_PROJECT_NAME` | `mcp-cluster` | Docker project name |
 | `HOME` | (current user) | Home directory for desktop-commander |
 | `SERPAPI_API_KEY` | (none) | API key for search-dependent MCP servers |
+| `LLM_BASE_URL` | `http://localhost:1234/v1` | LLM endpoint for DEMA |
+| `LLM_API_KEY` | `not-needed-for-local` | LLM API key |
+| `LLM_MODEL_NAME` | `hermes-3-llama-3.1` | LLM model for DEMA |
+| `LLM_MAX_TOKENS` | `4096` | Max tokens for DEMA |
+| `LLM_TEMPERATURE` | `0.2` | Temperature for DEMA |
+| `MEMORY_P2_THRESHOLD` | `2000` | DEMA P2 compaction threshold |
+| `MEMORY_P3_TTL` | `3600` | DEMA P3 signal TTL (seconds) |
 
 ## Troubleshooting
 
@@ -391,6 +450,7 @@ aiplay/
 
 - **tinymcp**: [../tinymcp](../tinymcp) — MCP Gateway server
 - **skillsmcp**: [../skillsmcp](../skillsmcp) — FastMCP Skills Provider
+- **dema**: [../dema](../dema) — MCP Control Plane (Deus Ex Machina) orchestration engine
 - **Docker MCP servers**: Official MCP Docker images from the MCP ecosystem
 
 ## License

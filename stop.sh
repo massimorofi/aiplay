@@ -11,6 +11,7 @@
 # This script stops the full MCP cluster:
 #   - tinymcp gateway
 #   - skillsmcp server
+#   - dema control plane
 #   - Desktop Commander MCP
 #   - Wikipedia MCP
 #   - DuckDuckGo MCP

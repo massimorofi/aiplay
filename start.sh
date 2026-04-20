@@ -11,6 +11,7 @@
 # This script starts the full MCP cluster:
 #   - tinymcp gateway (aggregates all MCP servers)
 #   - skillsmcp server (Claude Code skills)
+#   - dema control plane (MCP orchestration engine)
 #   - Desktop Commander MCP
 #   - Wikipedia MCP
 #   - DuckDuckGo MCP
@@ -203,6 +204,8 @@ show_status() {
     echo -e "${GREEN}MCP Gateway:${NC}      http://localhost:8080"
     echo -e "${GREEN}Gateway API docs:${NC} http://localhost:8080/docs"
     echo -e "${GREEN}Skills Server:${NC}    http://localhost:3001/mcp"
+    echo -e "${GREEN}DEMA Control Plane:${NC} http://localhost:8090"
+    echo -e "${GREEN}DEMA API docs:${NC}    http://localhost:8090/docs"
     echo ""
     section "MCP Client Configuration"
 
