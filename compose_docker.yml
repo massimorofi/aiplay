@@ -39,14 +39,13 @@ services:
       - duckduckgo-mcp
       - openbnb-airbnb
     restart: unless-stopped
+    network_mode: host
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
-    networks:
-      - mcp-cluster
 
   # ─── Skills MCP Server (skillsmcp) ───────────────────────
   # Provides Claude Code skills as MCP tools via streamable-http transport.
@@ -66,8 +65,7 @@ services:
       - ./skills:/home/user/.claude/skills:ro
       - ./config/skillsmcp/skills.settings.json:/app/skills.settings.json:ro
     restart: unless-stopped
-    networks:
-      - mcp-cluster
+    network_mode: host
 
   # ─── Docker MCP: Desktop Commander ───────────────────────
   # File system operations, shell execution, and Docker management.
@@ -82,8 +80,7 @@ services:
       - ${HOME}:/home/user:rw
       - /var/run/docker.sock:/var/run/docker.sock
     restart: "no"
-    networks:
-      - mcp-cluster
+    network_mode: host
 
   # ─── Docker MCP: Wikipedia ───────────────────────────────
   # Wikipedia search and article retrieval.
@@ -95,8 +92,7 @@ services:
     stdin_open: true
     tty: true
     restart: "no"
-    networks:
-      - mcp-cluster
+    network_mode: host
 
   # ─── Docker MCP: DuckDuckGo ──────────────────────────────
   # Web search via DuckDuckGo.
@@ -108,8 +104,7 @@ services:
     stdin_open: true
     tty: true
     restart: "no"
-    networks:
-      - mcp-cluster
+    network_mode: host
 
   # ─── Docker MCP: OpenBnB Airbnb ──────────────────────────
   # Airbnb-style accommodation search.
@@ -121,8 +116,7 @@ services:
     stdin_open: true
     tty: true
     restart: "no"
-    networks:
-      - mcp-cluster
+    network_mode: host
 
   # ─── DEMA (Deus Ex Machina) - MCP Control Plane ──────────
   # Enterprise orchestration engine that manages multi-stage agentic workflows.
@@ -144,7 +138,7 @@ services:
       - GATEWAY_URL=http://mcp-gateway:8080
       - LLM_BASE_URL=${LLM_BASE_URL:-http://localhost:1234/v1}
       - LLM_API_KEY=${LLM_API_KEY:-not-needed-for-local}
-      - LLM_MODEL_NAME=${LLM_MODEL_NAME:-hermes-3-llama-3.1}
+      - LLM_MODEL_NAME=${LLM_MODEL_NAME:-gemma-4-e4b-it}
       - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-4096}
       - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.2}
       - MEMORY_P2_THRESHOLD=${MEMORY_P2_THRESHOLD:-2000}
@@ -158,9 +152,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    networks:
-      - mcp-cluster
-
+    network_mode: host
+    
 networks:
   mcp-cluster:
     name: mcp-cluster

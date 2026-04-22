@@ -6,6 +6,6 @@
 docker exec -i \
   -e MCP_GATEWAY_URL=http://localhost:8080 \
   -e LMSTUDIO_URL=http://localhost:1234 \
-  mcp-cluster-mcp-gateway-1 \
+  tinymcp-gateway\
   python3 /app/agents/chatto/chatto.py
 
